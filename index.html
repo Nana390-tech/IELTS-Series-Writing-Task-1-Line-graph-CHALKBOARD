@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Line Graph Chalkboard</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cabin+Sketch:wght@400;700&family=Kalam:wght@400;700&family=Lexend:wght@400;600;700&family=Tajawal:wght@500;700&display=swap">
+<style>
+/* Layout: a sage classroom wall with one wood-framed green chalkboard, a chalk ledge, and a dark teacher caption strip below. One deliberate light look. */
+:root{
+  color-scheme: light;
+  --wall:#D5DED7;
+  --wall-ink:#1C2B26;
+  --muted:#4B5C55;
+  --wood:#8B5E3C;
+  --wood-dark:#5E3D25;
+  --slate:#1D302A;
+  --chalk:#F3F1E7;
+  --sun:#F2CF4A;
+  --blue:#8FD0F5;
+  --lilac:#E2A9F0;
+  --yellow:#F7DC6F;
+  --coral:#F59A80;
+  --mint:#8FE3B6;
+  --hand:"Kalam","Comic Sans MS","Segoe Print",cursive;
+  --sketch:"Cabin Sketch","Kalam",cursive;
+  --ui:"Lexend",system-ui,sans-serif;
+  --ar:"Tajawal","Noto Sans Arabic",sans-serif;
+}
+body{background:var(--wall);color:var(--wall-ink);font-family:var(--ui);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:18px 32px;
+  background-image:radial-gradient(circle at 20% 0%,rgba(255,255,255,.45),transparent 55%)}
+.wrap{max-width:1060px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:6px 20px}
+.eyebrow{margin:0 0 2px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
+h1{font-family:var(--sketch);font-weight:700;font-size:clamp(30px,4.4vw,46px);margin:0;line-height:1.05;text-wrap:balance}
+header p.lead{margin:0;color:var(--muted);font-size:15px;max-width:42ch}
+.frame{background:linear-gradient(180deg,#A0714C,var(--wood) 35%,var(--wood-dark));padding:clamp(7px,1.4vw,14px);border-radius:8px;
+  box-shadow:0 14px 34px rgba(30,45,38,.28), inset 0 1px 0 rgba(255,255,255,.25)}
+svg#board{display:block;width:100%;height:auto;max-width:100%;border-radius:3px;background:#22413A}
+.ledge{height:16px;margin:-6px 3% 0;background:linear-gradient(180deg,var(--wood),var(--wood-dark));border-radius:0 0 8px 8px;position:relative;box-shadow:0 6px 10px rgba(30,45,38,.2)}
+.ledge i{position:absolute;top:-3px;height:8px;border-radius:4px}
+.ledge .eraser{top:-9px;width:64px;height:13px;border-radius:3px;background:linear-gradient(180deg,#C8A47A 0 45%,#3B3F44 45%)}
+.caption{display:flex;gap:14px;align-items:flex-start;background:var(--slate);color:var(--chalk);border-radius:14px;padding:14px 18px;min-height:84px}
+.caption .who{flex:none;width:42px;height:42px;border-radius:50%;background:var(--sun);color:var(--slate);display:grid;place-items:center;font-family:var(--sketch);font-weight:700;font-size:22px}
+.caption p{margin:0;font-size:17px;line-height:1.6;max-width:72ch;min-width:0;transition:opacity .25s}
+.caption b{color:var(--yellow);font-weight:600}
+.caption .tb{color:var(--blue)} .caption .tl{color:var(--lilac)} .caption .ty{color:var(--yellow)} .caption .tc{color:var(--coral)} .caption .tm{color:var(--mint)}
+.caption .ar{font-family:var(--ar);font-size:1.05em;color:var(--mint)}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+button,select{font:600 14px var(--ui);border-radius:999px;border:0;padding:10px 16px;cursor:pointer;background:var(--slate);color:var(--chalk)}
+button:hover{filter:brightness(1.15)}
+button:focus-visible,select:focus-visible,input:focus-visible,.chip:focus-visible{outline:3px solid #2F7DB8;outline-offset:2px}
+#btnPlay{background:var(--sun);color:var(--slate);min-width:112px;font-size:15px}
+.ctl-group{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.spacer{flex:1}
+label.small{font-size:13px;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:6px}
+input[type=range]{accent-color:var(--slate);width:96px}
+.scenes{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:600 13px var(--ui);padding:7px 13px;border-radius:999px;background:rgba(29,48,42,.08);color:var(--wall-ink);border:1.5px solid rgba(29,48,42,.25)}
+.chip[aria-current="true"]{background:var(--slate);color:var(--yellow);border-color:var(--slate)}
+.chip.done{border-color:#3C8D63}
+.key{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13px;color:var(--muted);align-items:center;background:var(--slate);border-radius:12px;padding:10px 16px}
+.key span{display:flex;align-items:center;gap:7px;color:var(--chalk)}
+.key i{width:22px;height:5px;border-radius:3px;display:inline-block}
+.key strong{color:var(--chalk);font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:11px;opacity:.75}
+footer{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 16px;font-size:13px;color:var(--muted);padding-top:4px;border-top:1px solid rgba(29,48,42,.15)}
+footer b{color:var(--wall-ink)}
+.pulse{transform-box:fill-box;transform-origin:center;animation:pulse 1.1s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.35);opacity:.45}}
+@media (max-width:560px){.caption p{font-size:15px}.spacer{display:none}button,select{padding:9px 13px}}
+@media (prefers-reduced-motion:reduce){.pulse{animation:none}.caption p{transition:none}}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <div>
+      <p class="eyebrow">LSC 0316 · IELTS Task 1 Writing Practice</p>
+      <h1>The Line Graph Chalkboard</h1>
+    </div>
+    <p class="lead">Watch a Band 6 line graph report being written on the board, one paragraph at a time.</p>
+  </header>
+
+  <div>
+    <div class="frame">
+      <svg id="board" viewBox="0 0 1000 560" role="img" aria-label="Animated chalkboard that writes an IELTS Task 1 line graph report">
+        <defs id="defs">
+          <radialGradient id="slateGrad" cx="45%" cy="40%" r="75%">
+            <stop offset="0" stop-color="#2D5047"/>
+            <stop offset="1" stop-color="#1B342D"/>
+          </radialGradient>
+          <pattern id="grainPat" width="180" height="180" patternUnits="userSpaceOnUse">
+            <image id="grainImg" width="180" height="180" href=""/>
+          </pattern>
+        </defs>
+        <rect width="1000" height="560" fill="url(#slateGrad)"/>
+        <g id="smudges" fill="none" stroke="#F3F1E7" stroke-linecap="round" opacity=".05">
+          <path d="M70 120 C260 60 420 150 600 90 S880 70 950 140" stroke-width="40"/>
+          <path d="M40 430 C230 390 380 480 560 420 S820 470 980 400" stroke-width="54"/>
+          <path d="M300 260 C420 230 560 300 700 250" stroke-width="30"/>
+        </g>
+        <g id="layer"></g>
+        <rect width="1000" height="560" fill="url(#grainPat)" opacity=".5" pointer-events="none"/>
+        <g id="eraser" opacity="0" pointer-events="none">
+          <rect x="0" y="0" width="130" height="34" rx="5" fill="#C8A47A"/>
+          <rect x="0" y="30" width="130" height="22" rx="3" fill="#3B3F44"/>
+        </g>
+        <g id="pen" opacity="0" pointer-events="none">
+          <g transform="rotate(-38)">
+            <rect x="2" y="-6" width="46" height="12" rx="5" fill="#F6F4EA" id="penBody"/>
+            <rect x="34" y="-6" width="14" height="12" rx="5" fill="#000" opacity=".12"/>
+          </g>
+        </g>
+      </svg>
+    </div>
+    <div class="ledge" aria-hidden="true">
+      <i style="left:8%;width:38px;background:#F3F1E7"></i>
+      <i style="left:14%;width:26px;background:#F7DC6F"></i>
+      <i style="left:19%;width:30px;background:#8FD0F5"></i>
+      <i style="left:24.5%;width:22px;background:#E2A9F0"></i>
+      <i class="eraser" style="right:9%"></i>
+    </div>
+  </div>
+
+  <div class="caption" aria-live="polite">
+    <div class="who" aria-hidden="true">T</div>
+    <p id="cap">Loading the board…</p>
+  </div>
+
+  <div class="controls">
+    <div class="ctl-group">
+      <button id="btnPlay" type="button">▶ Play</button>
+      <button id="btnPrev" type="button" aria-label="Previous scene">◀ Back</button>
+      <button id="btnReplay" type="button">↺ Replay scene</button>
+      <button id="btnNext" type="button" aria-label="Next scene">Next ▶</button>
+    </div>
+    <div class="spacer"></div>
+    <div class="ctl-group">
+      <label class="small" for="speed">Speed
+        <select id="speed">
+          <option value="0.75">0.75×</option>
+          <option value="1" selected>1×</option>
+          <option value="1.5">1.5×</option>
+          <option value="2">2×</option>
+        </select>
+      </label>
+      <button id="btnMusic" type="button" aria-pressed="true">♪ Music on</button>
+      <label class="small" for="vol">Volume <input id="vol" type="range" min="0" max="100" value="45"></label>
+    </div>
+  </div>
+
+  <nav class="scenes" id="scenes" aria-label="Scenes"></nav>
+
+  <div class="key" aria-label="Colour key">
+    <strong>Colour key</strong>
+    <span><i style="background:var(--blue)"></i>Linking words</span>
+    <span><i style="background:var(--lilac)"></i>Sentence structures</span>
+    <span><i style="background:var(--yellow)"></i>Numbers &amp; years</span>
+    <span><i style="background:var(--chalk)"></i>Trend words (underlined)</span>
+  </div>
+
+  <footer>
+    <span>Designed by: <b>Nazila Motahari</b></span>
+    <span>LSC 0316 · IELTS Task 1 Writing Practice</span>
+  </footer>
+</div>
+
+<script>
+const NS="http://www.w3.org/2000/svg";
+const svg=document.getElementById('board'), layer=document.getElementById('layer'), defs=document.getElementById('defs');
+const pen=document.getElementById('pen'), penBody=document.getElementById('penBody'), eraser=document.getElementById('eraser');
+const cap=document.getElementById('cap');
+const HAND='Kalam, "Comic Sans MS", cursive', SKETCH='"Cabin Sketch", Kalam, cursive', UI='Lexend, system-ui, sans-serif', AR='Tajawal, "Noto Sans Arabic", sans-serif';
+const C={ink:'#F3F1E7',blue:'#8FD0F5',lilac:'#E2A9F0',yellow:'#F7DC6F',coral:'#F59A80',mint:'#8FE3B6',dim:'rgba(243,241,231,.5)',faint:'rgba(243,241,231,.16)'};
+const I=C.ink,B=C.blue,L=C.lilac,Y=C.yellow;
+
+/* chalk grain texture */
+(function(){const c=document.createElement('canvas');c.width=c.height=180;const x=c.getContext('2d');
+  for(let i=0;i<2600;i++){x.fillStyle=`rgba(32,62,53,${(Math.random()*.7+.2).toFixed(2)})`;const s=Math.random()<.85?1:2;x.fillRect(Math.random()*180,Math.random()*180,s,s);}
+  document.getElementById('grainImg').setAttribute('href',c.toDataURL());})();
+
+/* ---------- timing engine ---------- */
+const CANCEL={cancel:true};
+let runId=0, paused=false, speed=1, instant=false;
+function anim(ms,onFrame){
+  if(instant){onFrame(1);return Promise.resolve();}
+  const id=runId;
+  return new Promise((res,rej)=>{let t=0,last=null;
+    function f(ts){ if(id!==runId) return rej(CANCEL);
+      if(last===null) last=ts; const dt=Math.min(64,ts-last); last=ts;
+      if(!paused) t+=dt*speed; const p=Math.min(1,t/ms); onFrame(p);
+      if(p>=1) res(); else requestAnimationFrame(f);}
+    requestAnimationFrame(f);});
+}
+const wait=ms=>anim(ms,()=>{});
+const ease=p=>p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2;
+
+function el(tag,attrs={},parent=layer){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);parent.appendChild(e);return e;}
+let penTimer;
+function penAt(x,y,color){pen.setAttribute('transform',`translate(${x},${y})`);pen.setAttribute('opacity',instant?0:1);if(color)penBody.setAttribute('fill',color);
+  clearTimeout(penTimer);penTimer=setTimeout(()=>pen.setAttribute('opacity',0),500);}
+function say(html){cap.style.opacity=0;setTimeout(()=>{cap.innerHTML=html;cap.style.opacity=1;},instant?0:180);if(instant){cap.innerHTML=html;cap.style.opacity=1;}}
+
+let clipN=0;
+/* write text with a chalk reveal. parts: string or [[text,color],...] */
+async function write(parts,x,y,o={}){
+  if(typeof parts==='string') parts=[[parts,o.color||I]];
+  const size=o.size||25;
+  const t=el('text',{x,y,'font-size':size,'font-family':o.font||HAND,fill:I},o.parent||layer);
+  if(o.weight) t.setAttribute('font-weight',o.weight);
+  if(o.anchor) t.setAttribute('text-anchor',o.anchor);
+  if(o.dir) t.setAttribute('direction',o.dir);
+  let full='';const segs=[];
+  for(const [s,c] of parts){const ts=el('tspan',{fill:c||I},t);ts.textContent=s;segs.push({s,c,start:full.length});full+=s;}
+  const maxW=o.maxW||560;
+  let w=t.getComputedTextLength();
+  if(w>maxW){t.setAttribute('textLength',maxW);t.setAttribute('lengthAdjust','spacingAndGlyphs');}
+  const bb=t.getBBox();
+  segs.forEach(sg=>{try{sg.x=bb.x+(sg.start?t.getSubStringLength(0,sg.start):0);sg.w=t.getSubStringLength(sg.start,sg.s.length);}catch(e){sg.x=bb.x;sg.w=bb.width;}});
+  const r={x:bb.x,y:bb.y,w:bb.width,h:bb.height,by:y,segs,el:t};
+  if(instant) return r;
+  const id='c'+(++clipN);
+  const cp=el('clipPath',{id},defs);const cr=el('rect',{x:bb.x-6,y:bb.y-8,width:0,height:bb.height+16},cp);
+  t.setAttribute('clip-path',`url(#${id})`);
+  const ms=o.ms||Math.max(350,full.length*34);
+  await anim(ms,p=>{const cw=(bb.width+12)*p;cr.setAttribute('width',cw);
+    const cx=bb.x+cw;let col=I;for(const sg of segs){if(cx>=sg.x)col=sg.c||I;}
+    penAt(Math.min(cx,bb.x+bb.width),y-size*.3,col);});
+  t.removeAttribute('clip-path');cp.remove();
+  return r;
+}
+/* chalk stroke */
+async function draw(d,color,o={}){
+  const p=el('path',{d,fill:'none',stroke:color,'stroke-width':o.width||3,'stroke-linecap':'round','stroke-linejoin':'round'},o.parent||layer);
+  if(o.opacity) p.setAttribute('opacity',o.opacity);
+  if(instant){if(o.dash)p.setAttribute('stroke-dasharray',o.dash);return p;}
+  const len=p.getTotalLength();p.setAttribute('stroke-dasharray',len);p.setAttribute('stroke-dashoffset',len);
+  await anim(o.ms||Math.min(900,Math.max(260,len*2.2)),q=>{const e=ease(q);p.setAttribute('stroke-dashoffset',len*(1-e));const pt=p.getPointAtLength(len*e);penAt(pt.x,pt.y,color);});
+  if(o.dash){p.setAttribute('stroke-dasharray',o.dash);p.removeAttribute('stroke-dashoffset');}
+  return p;
+}
+function wavy(x1,x2,y,a=3){let d=`M${x1} ${y}`;const n=Math.max(2,Math.round((x2-x1)/22));const s=(x2-x1)/n;for(let i=0;i<n;i++){d+=` q ${s/2} ${i%2?a:-a} ${s} 0`;}return d;}
+const under=(r,i,color,o={})=>{const s=r.segs[i];const y=r.by+7;return draw(`M${s.x} ${y} Q ${s.x+s.w/2} ${y+3} ${s.x+s.w} ${y-1}`,color,{width:o.width||2.5,ms:o.ms||320});};
+const ring=(r,i,color)=>{const s=r.segs[i];const cx=s.x+s.w/2,cy=r.by-8,rx=s.w/2+12,ry=22;
+  return draw(`M${cx-rx} ${cy+4} A ${rx} ${ry} 0 1 1 ${cx+rx} ${cy} A ${rx} ${ry} 0 1 1 ${cx-rx+10} ${cy-6}`,color,{width:2.5,ms:520});};
+async function stamp(text,cx,cy,color){
+  const g=el('g',{});const t=el('text',{x:0,y:6,'text-anchor':'middle','font-family':SKETCH,'font-weight':700,'font-size':16,fill:color,'letter-spacing':'1'},g);
+  t.textContent=text;let w=t.getComputedTextLength();if(w>112){t.setAttribute('textLength',112);t.setAttribute('lengthAdjust','spacingAndGlyphs');w=112;}
+  el('rect',{x:-w/2-9,y:-14,width:w+18,height:28,rx:6,fill:'none',stroke:color,'stroke-width':2},g);g.insertBefore(g.lastChild,t);
+  const set=s=>g.setAttribute('transform',`translate(${cx},${cy}) rotate(-6) scale(${s})`);
+  set(instant?1:0);await anim(300,p=>set(p<.7?p/.7*1.18:1.18-(p-.7)/.3*.18));return g;
+}
+async function heading(text,color=I){
+  const r=await write(text,40,58,{font:SKETCH,size:32,weight:700,color,maxW:650,ms:900});
+  await draw(wavy(40,40+r.w,70,2.5),color,{width:2.5,ms:400});return r;
+}
+async function fadeIn(node,ms=400){if(instant)return;node.setAttribute('opacity',0);await anim(ms,p=>node.setAttribute('opacity',p));}
+
+/* ---------- the data ---------- */
+const YEARS=[2004,2009,2014,2019,2024];
+const S={
+  mall:{name:'Shopping mall',short:'Mall',color:C.coral,v:[60,75,90,80,65]},
+  museum:{name:'Museum',short:'Museum',color:C.mint,v:[10,15,25,50,80]},
+  beach:{name:'Beach park',short:'Beach',color:C.ink,v:[40,35,40,38,40],dash:true}
+};
+const KEYS=['mall','museum','beach'];
+const CROSS={yr:2019+5*(30/45),v:70};
+function val(k,yr){const f=(yr-2004)/5;const i=Math.min(3,Math.floor(f));const t=f-i;const v=S[k].v;return v[i]+(v[i+1]-v[i])*t;}
+const fmt=v=>Math.round(v).toLocaleString('en-US')+',000';
+
+function makeGraph(b,mini){
+  const G={b,mini,X:yr=>b.x+(yr-2004)/20*b.w,Y:v=>b.y+b.h-v/100*b.h,lines:{}};
+  G.g=el('g',{});return G;
+}
+async function drawAxes(G){
+  const {b,mini,X,Y}=G;const fs=mini?13:17;
+  const ticks=mini?[0,50,100]:[0,20,40,60,80,100];
+  const grid=el('g',{},G.g);
+  ticks.forEach(t=>{if(t>0)el('line',{x1:b.x,x2:b.x+b.w,y1:Y(t),y2:Y(t),stroke:C.faint,'stroke-width':1.5,'stroke-dasharray':'3 7'},grid);
+    const tx=el('text',{x:b.x-10,y:Y(t)+5,'text-anchor':'end','font-family':HAND,'font-size':fs,fill:C.dim},grid);tx.textContent=t;});
+  (mini?[2004,2014,2024]:YEARS).forEach(yr=>{const tx=el('text',{x:X(yr),y:b.y+b.h+(mini?20:28),'text-anchor':'middle','font-family':HAND,'font-size':fs,fill:C.dim},grid);tx.textContent=yr;});
+  fadeIn(grid,500);
+  await draw(`M${b.x} ${b.y-8} V${b.y+b.h} H${b.x+b.w+8}`,I,{width:mini?2:3,ms:mini?380:700,parent:G.g});
+}
+function addLines(G){
+  const id='gl'+(++clipN);const cp=el('clipPath',{id},defs);
+  G.clip=el('rect',{x:G.b.x-10,y:G.b.y-30,width:0,height:G.b.h+60},cp);G.clipId=id;
+  KEYS.forEach(k=>{const s=S[k];const d=s.v.map((v,i)=>`${i?'L':'M'}${G.X(YEARS[i])} ${G.Y(v)}`).join(' ');
+    const p=el('path',{d,fill:'none',stroke:s.color,'stroke-width':G.mini?3:5,'stroke-linecap':'round','stroke-linejoin':'round','clip-path':`url(#${id})`},G.g);
+    if(s.dash)p.setAttribute('stroke-dasharray',G.mini?'1 7':'1 11');
+    G.lines[k]=p;});
+}
+function reveal(G,yr){G.clip.setAttribute('width',G.X(yr)-G.b.x+20);}
+function focus(G,k){KEYS.forEach(q=>{const p=G.lines[q];p.setAttribute('opacity',!k||q===k?1:.22);p.setAttribute('stroke-width',(G.mini?3:5)+(k===q?1.5:0));});}
+async function point(G,k,yr,label,o={}){
+  const x=G.X(yr),y=G.Y(o.v!==undefined?o.v:val(k,yr));
+  const g=el('g',{},G.g);
+  el('circle',{cx:x,cy:y,r:G.mini?5:7,fill:k?S[k].color:Y,stroke:'#1D3A32','stroke-width':2},g);
+  if(label){const fs=G.mini?14:18;const lx=x+(o.dx||0),ly=y+(o.dy!==undefined?o.dy:-11);
+    const t=el('text',{x:lx,y:ly,'text-anchor':o.anchor||'middle','font-family':HAND,'font-weight':700,'font-size':fs,fill:Y},g);t.textContent=label;}
+  if(o.ring){el('circle',{cx:x,cy:y,r:G.mini?11:16,fill:'none',stroke:Y,'stroke-width':2.5,class:'pulse'},g);}
+  if(!instant){g.setAttribute('opacity',0);await anim(260,p=>g.setAttribute('opacity',p));}
+  return g;
+}
+/* the small reference graph that sits on the right while we write */
+async function miniGraph(){
+  await draw('M738 72 H984 V430 H738 Z',C.dim,{width:2,ms:600,dash:'6 7'});
+  await write('Visitors per month (000s)',861,98,{size:15,anchor:'middle',color:C.dim,ms:500,maxW:230});
+  const G=makeGraph({x:785,y:118,w:180,h:180},true);
+  await drawAxes(G);addLines(G);
+  await anim(900,p=>reveal(G,2004+20*p));reveal(G,2024);
+  const lg=el('g',{});
+  KEYS.forEach((k,i)=>{const y=355+i*26;const ln=el('line',{x1:758,x2:788,y1:y-5,y2:y-5,stroke:S[k].color,'stroke-width':4,'stroke-linecap':'round'},lg);
+    if(S[k].dash)ln.setAttribute('stroke-dasharray','1 7');
+    const t=el('text',{x:798,y,'font-family':HAND,'font-size':17,fill:I},lg);t.textContent=S[k].name;});
+  await fadeIn(lg,350);
+  return G;
+}
+
+/* ---------- scenes ---------- */
+const SCENES=[
+{name:'Title',async play(){
+  say("Welcome! Today the board will write a full <b>line graph report</b> for IELTS Writing Task 1. Watch the chalk and notice the colours.");
+  await write('Line Graph Report',500,170,{font:SKETCH,size:66,weight:700,anchor:'middle',maxW:700,ms:1300});
+  await draw(wavy(285,715,196,5),Y,{width:4});
+  await write('IELTS Writing Task 1',500,250,{size:32,anchor:'middle',color:B,ms:800});
+  await draw('M380 470 V320 M380 470 H640',I,{width:3});
+  await draw('M392 452 L440 432 L488 440 L540 392 L612 340',C.mint,{width:5});
+  await draw('M612 340 l-18 1 M612 340 l-5 17',C.mint,{width:5,ms:260});
+  await draw('M392 400 L440 380 L488 360 L540 380 L612 420',C.coral,{width:5});
+  say("<b>Blue</b> = <span class=tb>linking words</span>. <b>Purple</b> = <span class=tl>sentence structures</span>. <b>Yellow</b> = <span class=ty>numbers and years</span>. Trend words are underlined in white.");
+  await write('20 minutes · 150+ words · 4 paragraphs',500,525,{size:23,anchor:'middle',color:Y});
+}},
+{name:'The task',async play(){
+  say("First, <b>read the task</b> carefully. What does the graph measure?");
+  await heading('The Task');
+  const G=await miniGraph();
+  const r1=await write([["The graph below shows ",I],["the number of visitors",I]],150,125,{size:24});
+  await under(r1,1,Y);
+  const r2=await write([["per month",I],[" to ",I],["three places",I],[" in a city between",I]],150,162,{size:24});
+  await under(r2,0,Y);await under(r2,2,Y);
+  await stamp('WHAT?',78,140,Y);
+  say("It measures <b>visitors per month</b> to <b>three places</b>. And the time? <b>2004 to 2024</b>.");
+  const r3=await write([["2004 and 2024",I],[".",I]],150,199,{size:24});
+  await under(r3,0,Y);await stamp('WHEN?',78,192,Y);
+  const r4=await write("Summarise the information by selecting and",150,246,{size:24});
+  const r5=await write([["reporting the ",I],["main features",I],[", and ",I],["make",I]],150,283,{size:24});
+  const r6=await write([["comparisons",I],[" where relevant.",I]],150,320,{size:24});
+  say("You have <b>two jobs</b>: report the <b>main features</b> (the big changes, the highest and lowest points) and <b>make comparisons</b> between the lines.");
+  await ring(r5,1,C.coral);await under(r5,3,C.coral);await under(r6,0,C.coral);
+  await stamp('YOUR JOB',78,290,C.coral);
+  const r7=await write([["Write at least ",I],["150 words",I],[".",I]],150,367,{size:24});
+  await under(r7,1,C.coral);await stamp('150+',78,360,C.coral);
+  say("All the years are in the <b>past</b>, so we use the <b>past simple</b>: <span class=tl>rose, fell, reached, remained</span>.");
+  await write([["Past years ",I],["→",Y],[" past simple: ",I],["rose, fell, reached",L]],150,440,{size:24});
+  await draw(wavy(150,690,455,3),C.dim,{width:2,ms:500});
+}},
+{name:'Read the graph',async play(){
+  say("Before we write, let's <b>read the graph</b>. Watch the lines grow, year by year.");
+  const G=makeGraph({x:110,y:80,w:560,h:350},false);
+  const yt=el('text',{x:0,y:0,'text-anchor':'middle','font-family':HAND,'font-size':17,fill:C.dim,transform:'translate(42 255) rotate(-90)'});yt.textContent='Visitors per month (thousands)';
+  await fadeIn(yt,300);
+  await drawAxes(G);addLines(G);reveal(G,2004);
+  const lg=el('g',{});
+  [['mall',110],['museum',300],['beach',450]].forEach(([k,x])=>{const ln=el('line',{x1:x,x2:x+34,y1:518,y2:518,stroke:S[k].color,'stroke-width':5,'stroke-linecap':'round'},lg);
+    if(S[k].dash)ln.setAttribute('stroke-dasharray','1 10');const t=el('text',{x:x+44,y:524,'font-family':HAND,'font-size':19,fill:I},lg);t.textContent=S[k].name;});
+  await fadeIn(lg,300);
+  /* trend chips with Arabic */
+  const chipData=[['rose steadily','ارتفع بثبات'],['dipped slightly','انخفض قليلاً'],['reached a peak','وصل إلى الذروة'],['declined gradually','انخفض تدريجياً'],['rose sharply','ارتفع بشكل حاد'],['overtook','تجاوز'],['remained stable','ظل مستقراً']];
+  const ch=el('text',{x:860,y:66,'text-anchor':'middle','font-family':SKETCH,'font-weight':700,'font-size':19,fill:Y});ch.textContent='Trend language';
+  const chips=chipData.map(([en,ar],i)=>{const y=82+i*58;const g=el('g',{});
+    const r=el('rect',{x:742,y,width:236,height:50,rx:14,fill:'rgba(243,241,231,.04)',stroke:C.faint,'stroke-width':2},g);
+    const t=el('text',{x:758,y:y+22,'font-family':HAND,'font-size':19,'font-weight':700,fill:C.dim},g);t.textContent=en;
+    const a=el('text',{x:962,y:y+42,'text-anchor':'start','font-family':AR,'font-size':16,'font-weight':700,fill:C.dim,direction:'rtl'},g);a.textContent=ar;
+    return {on(col=Y){r.setAttribute('stroke',col);r.setAttribute('fill','rgba(247,220,111,.13)');t.setAttribute('fill',col);a.setAttribute('fill',C.mint);
+      if(!instant){g.style.transformBox='fill-box';g.style.transformOrigin='center';g.animate([{transform:'scale(1.08)'},{transform:'scale(1)'}],{duration:450,easing:'ease-out'});}}};});
+  await fadeIn(ch,300);
+  /* live parts */
+  const cursor=el('line',{y1:G.b.y-10,y2:G.b.y+G.b.h,stroke:Y,'stroke-width':2,'stroke-dasharray':'3 6'});
+  const yearTxt=el('text',{x:126,y:126,'font-family':SKETCH,'font-weight':700,'font-size':46,fill:'rgba(247,220,111,.55)'});
+  const labs={};KEYS.forEach(k=>{labs[k]=el('text',{'font-family':HAND,'font-weight':700,'font-size':17,fill:S[k].color,stroke:'#1E3A32','stroke-width':5,'paint-order':'stroke','stroke-linejoin':'round'});});
+  const dots={};KEYS.forEach(k=>{dots[k]=el('circle',{r:6,fill:S[k].color,stroke:'#1D3A32','stroke-width':2});});
+  function setYear(yr){reveal(G,yr);const x=G.X(yr);cursor.setAttribute('x1',x);cursor.setAttribute('x2',x);yearTxt.textContent=Math.floor(yr+.001);
+    const right=yr<2016;const items=KEYS.map(k=>({k,v:val(k,yr),y:G.Y(val(k,yr))})).sort((a,b)=>a.y-b.y);
+    for(let i=1;i<items.length;i++){if(items[i].y-items[i-1].y<22)items[i].ly=(items[i-1].ly??items[i-1].y)+22;}
+    items.forEach(it=>{const t=labs[it.k];t.setAttribute('x',x+(right?14:-14));t.setAttribute('y',(it.ly??it.y)+6);t.setAttribute('text-anchor',right?'start':'end');
+      t.textContent=`${S[it.k].short} ${fmt(it.v)}`;dots[it.k].setAttribute('cx',x);dots[it.k].setAttribute('cy',it.y);});}
+  const run=(a,b,ms)=>anim(ms,p=>setYear(a+(b-a)*p));
+  setYear(2004);
+  say("In <b class=ty>2004</b>, the <span class=tc>mall</span> is the most popular place with <b>60,000</b> visitors a month. The <span class=tm>museum</span> has only <b>10,000</b>.");
+  await wait(3600);
+  say("2004 to 2009: the <span class=tc>mall</span> <b>rose steadily</b>. The beach park <b>dipped slightly</b>.");
+  await run(2004,2009,2600);chips[0].on();chips[1].on();await wait(2600);
+  say("By <b class=ty>2014</b>, the <span class=tc>mall</span> <b>reached a peak</b> of <b>90,000</b>, its highest point.");
+  await run(2009,2014,2600);chips[2].on();await point(G,null,2014,'',{v:90,ring:true});await wait(2600);
+  say("After 2014, the <span class=tc>mall</span> <b>declined gradually</b>, but the <span class=tm>museum</span> <b>rose sharply</b>.");
+  await run(2014,2019,2600);chips[3].on();chips[4].on();await wait(2400);
+  say("Look! In about <b class=ty>2022</b>, the lines cross. The <span class=tm>museum</span> <b>overtook</b> the <span class=tc>mall</span>.");
+  await run(2019,CROSS.yr,2200);chips[5].on();await point(G,null,CROSS.yr,'',{v:CROSS.v,ring:true});await wait(3000);
+  await run(CROSS.yr,2024,1400);
+  say("And the beach park? It stayed close to <b>40,000</b> the whole time. It <b>remained stable</b>.");
+  chips[6].on();if(!instant){const L=G.lines.beach;L.animate([{opacity:1},{opacity:.3},{opacity:1},{opacity:.3},{opacity:1}],{duration:1800});}
+  await wait(3400);
+  say("Now we know the story of the graph. Next, we <b>write it</b>, paragraph by paragraph.");
+}},
+{name:'Introduction',async play(){
+  say("<b>Paragraph 1: Introduction.</b> Paraphrase the task. Say the same thing in <b>different words</b>.");
+  await heading('1 · Introduction');
+  const G=await miniGraph();
+  const r1=await write([["The line graph ",I],["illustrates",I],[" ",I],["how many people",I]],150,125);
+  await under(r1,1,C.mint);await under(r1,3,C.mint);
+  const r2=await write([["visited",I],[" three places in a city – a shopping",I]],150,165);
+  await under(r2,0,C.mint);
+  await stamp('PARAPHRASE',80,150,C.mint);
+  say("Add the <b>names</b> of the three places, so the reader knows what the lines are.");
+  await write("mall, a museum and a beach park – each month",150,205);
+  const r4=await write([["from ",I],["2004",Y],[" to ",I],["2024",Y],[".",I]],150,245);
+  await under(r4,0,C.mint);await under(r4,2,C.mint);
+  say("Here are the swaps. Change the <b>verb</b>, change the <b>noun phrase</b>, change the <b>time phrase</b>.");
+  await write('Task words',150,320,{size:20,color:C.dim,font:SKETCH,weight:700});
+  await write('My words',450,320,{size:20,color:C.dim,font:SKETCH,weight:700});
+  const rows=[['shows','illustrates'],['the number of visitors','how many people visited'],['between 2004 and 2024','from 2004 to 2024']];
+  for(let i=0;i<rows.length;i++){const y=362+i*40;
+    await write(rows[i][0],150,y,{size:22,color:C.dim,maxW:260});
+    await draw(`M${395} ${y-8} h40 m-10 -7 l10 7 l-10 7`,Y,{width:2.5,ms:260});
+    await write(rows[i][1],450,y,{size:22,color:C.mint,maxW:270});}
+  say("Don't copy the task word for word. The examiner wants to see <b>your</b> words.");
+}},
+{name:'Overview',async play(){
+  say("<b>Paragraph 2: Overview.</b> This is the most important paragraph. Start with <span class=tb>Overall,</span> and give the <b>big picture</b>.");
+  await heading('2 · Overview');
+  const G=await miniGraph();
+  focus(G,'museum');
+  const r1=await write([["Overall,",B],[" the museum ",I],["saw the biggest increase",L],[",",I]],150,125);
+  await stamp('OVERVIEW',80,140,Y);
+  say("Use a <span class=tl>superlative</span>: <span class=tl>the biggest increase</span>, <span class=tl>the most popular</span>. It shows the main feature.");
+  const r2=await write([["and it was ",I],["the most popular",L],[" place by the end.",I]],150,165);
+  await point(G,'museum',2024,'',{});
+  focus(G,'mall');
+  say("<span class=tb>In contrast,</span> shows a different trend. The <span class=tc>mall</span> went up, then down.");
+  const r3=await write([["In contrast,",B],[" visitor numbers at the mall ",I],["rose",I]],150,215);
+  await under(r3,2,I);
+  const r4=await write([["and then ",I],["fell",I],[", ",I],["while",B],[" the beach park stayed",I]],150,255);
+  await under(r4,1,I);
+  focus(G,'beach');
+  const r5=await write([["fairly stable",I],[" throughout the period.",I]],150,295);
+  await under(r5,0,I);
+  focus(G,null);
+  say("Notice: <b>no numbers</b> in the overview! Save the data for the body paragraphs.");
+  await write('60,000',300,400,{size:40,color:C.dim,font:SKETCH,weight:700,ms:500});
+  await draw('M285 410 L445 368',C.coral,{width:5,ms:350});
+  await draw('M285 370 L445 412',C.coral,{width:5,ms:350});
+  await stamp('NO NUMBERS',540,390,C.coral);
+  say("Ask yourself: <b>What is going up? What is going down? What stays the same?</b> That is your overview.");
+}},
+{name:'Body 1',async play(){
+  say("<b>Paragraph 3: Body 1.</b> Now we add <b>details</b>. Group the two lines that changed the most: the <span class=tc>mall</span> and the <span class=tm>museum</span>.");
+  await heading('3 · Body 1: Mall & Museum');
+  const G=await miniGraph();
+  focus(G,'mall');
+  await write([["In 2004,",B],[" the mall was ",I],["the most popular",L],[" place,",I]],150,125);
+  await stamp('MALL',80,140,C.coral);
+  const r2=await write([["with ",L],["60,000",Y],[" visitors",L],[" a month. This figure",I]],150,165);
+  await point(G,'mall',2004,'60',{});
+  say("<span class=tl>with + number</span> adds data to the end of a sentence. Very useful!");
+  const r3=await write([["rose steadily",I],[" ",I],["to a peak of ",L],["90,000",Y],[" in ",I],["2014",Y],[".",I]],150,205);
+  await under(r3,0,I);await point(G,'mall',2014,'90',{ring:true});
+  say("<span class=tl>to a peak of</span> = to the highest point. <span class=tb>After that,</span> moves the story forward in time.");
+  const r4=await write([["After that,",B],[" it ",I],["declined gradually",I],[" to ",I],["65,000",Y]],150,245);
+  await under(r4,2,I);
+  await write([["in ",I],["2024",Y],[". ",I],["In contrast,",B],[" the museum started at",I]],150,285);
+  await point(G,'mall',2024,'65',{dx:-4,dy:16,anchor:'end'});
+  focus(G,'museum');
+  await stamp('MUSEUM',80,290,C.mint);
+  say("<span class=tb>In contrast,</span> moves to a line with a <b>very different</b> trend.");
+  const r6=await write([["only ",I],["10,000",Y],[". Its numbers ",I],["grew slowly",I],[" at first.",I]],150,325);
+  await under(r6,3,I);await point(G,'museum',2004,'10',{dy:-9});
+  say("<span class=tb>However,</span> shows a change. <span class=tl>, reaching + number</span> adds the end point without starting a new sentence.");
+  const r7=await write([["However,",B],[" they then ",I],["rose sharply",I],[", reaching",L]],150,365);
+  await under(r7,2,I);
+  await write([["80,000",Y],[" in ",I],["2024",Y],[". ",I],["As a result,",B],[" the museum",I]],150,405);
+  await point(G,'museum',2024,'80',{dx:-4,anchor:'end'});
+  focus(G,null);
+  const r9=await write([["overtook",L],[" the mall in about ",I],["2022",Y],[".",I]],150,445);
+  await point(G,null,CROSS.yr,'',{v:CROSS.v,ring:true});
+  say("<span class=tb>As a result,</span> shows the effect. <span class=tl>overtook</span> = went above. Each sentence matches a <b>point on the graph</b>.");
+  await stamp('COMPARE',80,440,Y);
+}},
+{name:'Body 2',async play(){
+  say("<b>Paragraph 4: Body 2.</b> Describe the line we have not covered yet. <span class=tb>Turning to</span> introduces a new line.");
+  await heading('4 · Body 2: Beach Park');
+  const G=await miniGraph();
+  focus(G,'beach');
+  await write([["Turning to",B],[" the beach park, it had ",I],["40,000",Y]],150,125);
+  await stamp('BEACH',80,140,I);
+  await point(G,'beach',2004,'40',{dy:-9});
+  const r2=await write([["visitors in ",I],["2004",Y],[". The number ",I],["dipped slightly",I]],150,165);
+  await under(r2,3,I);
+  const r3=await write([["to ",I],["35,000",Y],[" in ",I],["2009",Y],[", ",I],["but",B],[" then ",I],["recovered",I],[".",I]],150,205);
+  await under(r3,7,I);await point(G,'beach',2009,'35',{dy:20});
+  say("<span class=tb>For the rest of the period,</span> covers many years in one phrase. <b>remained stable</b> = did not change much.");
+  await write([["For the rest of the period,",B],[" it ",I],["remained",I]],150,255);
+  const r5=await write([["stable",I],[" at ",I],["around 40,000",Y],[" visitors a month.",I]],150,295);
+  await under(r5,0,I);
+  await stamp('DETAIL',80,270,Y);
+  focus(G,null);
+  say("Count the words: about <b>170</b>. That's more than <b>150</b>. ✓");
+  const wc=await write([["≈ 170 words",C.mint],["  (150+ needed)",C.dim]],150,375,{size:28,font:SKETCH,weight:700,maxW:420});
+  const tx=wc.x+wc.w+18;await draw(`M${tx} 362 l14 16 l30 -34`,C.mint,{width:5,ms:350});
+  say("Task 1 does <b>not</b> need a conclusion. Your <b>overview</b> already gives the big picture. Finish here!");
+  await write([["No conclusion needed – ",I],["the overview does that job.",Y]],150,440,{size:23});
+}},
+{name:'Recap',async play(){
+  say("Here's the whole plan on one board. Use it for <b>any line graph</b>.");
+  const boxes=[['1','Introduction','Paraphrase the task',C.mint],['2','Overview','Overall, + main trends. No numbers!',Y],['3','Body 1','Biggest changes + data + compare',C.coral],['4','Body 2','Other line(s) + data',I]];
+  for(let i=0;i<4;i++){const y=34+i*104;const [n,t,d,c]=boxes[i];
+    await draw(`M40 ${y} H470 V${y+88} H40 Z`,c,{width:2.5,ms:420});
+    await write(n,62,y+52,{font:SKETCH,size:38,weight:700,color:c,ms:200});
+    await write(t,104,y+36,{font:SKETCH,size:25,weight:700,color:c,maxW:340,ms:400});
+    await write(d,104,y+70,{size:20,maxW:350,ms:500});}
+  say("<span class=tb>Linking words</span> guide the reader. <span class=tl>Sentence structures</span> add data smoothly.");
+  await write('Linking words',520,62,{font:SKETCH,size:22,weight:700,color:B,maxW:440});
+  await write('Overall, · In contrast, · However,',520,94,{size:20,color:B,maxW:440});
+  await write('After that, · As a result, · Turning to',520,122,{size:20,color:B,maxW:440});
+  await write('Sentence structures',520,168,{font:SKETCH,size:22,weight:700,color:L,maxW:440});
+  await write('with + number · to a peak of + number',520,200,{size:20,color:L,maxW:440});
+  await write(', reaching + number · the most popular',520,228,{size:20,color:L,maxW:440});
+  say("And the <b>trend words</b>, with Arabic to help you remember. <span class=ar>ارتفع · انخفض · ظل مستقراً</span>");
+  await write('Trend words',520,274,{font:SKETCH,size:22,weight:700,maxW:440});
+  const tw=[['rose steadily','ارتفع بثبات'],['declined gradually','انخفض تدريجياً'],['rose sharply','ارتفع بشكل حاد'],['dipped slightly','انخفض قليلاً'],['remained stable','ظل مستقراً']];
+  for(let i=0;i<tw.length;i++){const y=306+i*30;
+    await write(tw[i][0],520,y,{size:20,maxW:240,ms:420});
+    await write(tw[i][1],960,y,{size:18,font:AR,weight:700,color:C.mint,anchor:'start',dir:'rtl',maxW:190,ms:420});}
+  await write('Past simple for past years · 150+ words · 20 minutes',500,530,{size:21,anchor:'middle',color:Y,maxW:900});
+  say("Great work! Now try it yourself: describe a line graph using this plan, these <span class=tb>linking words</span> and these <span class=tl>structures</span>.");
+}}
+];
+
+/* ---------- player ---------- */
+const btnPlay=document.getElementById('btnPlay'),nav=document.getElementById('scenes');
+let current=0,started=false,ended=false;const done=new Set();
+SCENES.forEach((s,i)=>{const b=document.createElement('button');b.type='button';b.className='chip';b.textContent=`${i+1}. ${s.name}`;
+  b.addEventListener('click',()=>{begin();runScene(i);});nav.appendChild(b);});
+function ui(){[...nav.children].forEach((b,i)=>{b.setAttribute('aria-current',i===current?'true':'false');b.classList.toggle('done',done.has(i));});
+  btnPlay.textContent=!started||ended?'▶ Play':paused?'▶ Resume':'❚❚ Pause';}
+function clearBoard(){layer.replaceChildren();defs.querySelectorAll('clipPath').forEach(c=>c.remove());pen.setAttribute('opacity',0);}
+async function erase(){
+  if(instant||!layer.childNodes.length){clearBoard();return;}
+  eraser.setAttribute('opacity',1);
+  await anim(750,p=>{const x=-160+1300*p;eraser.setAttribute('transform',`translate(${x},${250+Math.sin(p*18)*40}) rotate(-8)`);layer.setAttribute('opacity',1-p);});
+  eraser.setAttribute('opacity',0);clearBoard();layer.setAttribute('opacity',1);
+}
+async function runScene(i){
+  const id=++runId;current=i;paused=false;ended=false;ui();music.resume();
+  try{
+    await erase();layer.setAttribute('opacity',1);
+    await SCENES[i].play();
+    done.add(i);ui();
+    await wait(2200);
+    if(i<SCENES.length-1) runScene(i+1); else {ended=true;ui();music.fade();}
+  }catch(e){if(e!==CANCEL){console.error(e);}}
+}
+function begin(){if(!started){started=true;music.start();}}
+btnPlay.addEventListener('click',()=>{
+  if(!started||ended){begin();runScene(ended?0:current);return;}
+  paused=!paused;paused?music.pause():music.resume();ui();});
+document.getElementById('btnReplay').addEventListener('click',()=>{begin();runScene(current);});
+document.getElementById('btnPrev').addEventListener('click',()=>{begin();runScene(Math.max(0,current-1));});
+document.getElementById('btnNext').addEventListener('click',()=>{begin();runScene(Math.min(SCENES.length-1,current+1));});
+document.getElementById('speed').addEventListener('change',e=>{speed=parseFloat(e.target.value)||1;});
+document.addEventListener('keydown',e=>{if(e.code==='Space'&&!['BUTTON','SELECT','INPUT'].includes(e.target.tagName)){e.preventDefault();btnPlay.click();}});
+
+/* ---------- background music (synthesised, no files) ---------- */
+const music=(()=>{
+  let ctx,master,timer,next=0,step=0,on=true,vol=.45,running=false;
+  const chords=[[48,55,60,64],[43,55,59,62],[45,52,57,60],[41,53,57,60]]; // C G Am F
+  const hz=m=>440*Math.pow(2,(m-69)/12);
+  function note(m,t,dur,type,g){const o=ctx.createOscillator(),a=ctx.createGain(),f=ctx.createBiquadFilter();
+    o.type=type;o.frequency.value=hz(m);f.type='lowpass';f.frequency.value=type==='triangle'?900:2200;
+    a.gain.setValueAtTime(0,t);a.gain.linearRampToValueAtTime(g,t+(type==='triangle'?.4:.012));a.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    o.connect(f);f.connect(a);a.connect(master);o.start(t);o.stop(t+dur+.05);}
+  function schedule(){const beat=60/84/2;
+    while(next<ctx.currentTime+.4){const bar=Math.floor(step/8)%4,ch=chords[bar],s=step%8;
+      if(s===0){ch.forEach(m=>note(m,next,beat*8,'triangle',.035));note(ch[0]-12,next,beat*6,'sine',.07);}
+      const arp=[0,2,1,3,2,1,3,2][s];note(ch[arp]+12,next,beat*1.8,'sine',s%2?.035:.05);
+      next+=beat;step++;}}
+  return{
+    start(){if(running)return;try{ctx=ctx||new (window.AudioContext||window.webkitAudioContext)();master=master||ctx.createGain();master.gain.value=on?vol*.6:0;master.connect(ctx.destination);
+      next=ctx.currentTime+.1;timer=setInterval(schedule,100);running=true;ctx.resume();}catch(e){}},
+    pause(){if(ctx)ctx.suspend();},
+    resume(){if(ctx&&running)ctx.resume();},
+    fade(){if(master)master.gain.setTargetAtTime(0,ctx.currentTime,1.2);setTimeout(()=>{clearInterval(timer);running=false;if(master&&ctx)master.gain.value=on?vol*.6:0;},4000);},
+    toggle(){on=!on;if(master)master.gain.setTargetAtTime(on?vol*.6:0,ctx.currentTime,.1);return on;},
+    volume(v){vol=v;if(master&&on)master.gain.setTargetAtTime(vol*.6,ctx.currentTime,.1);}
+  };})();
+const btnMusic=document.getElementById('btnMusic');
+btnMusic.addEventListener('click',()=>{const on=music.toggle();btnMusic.textContent=on?'♪ Music on':'♪ Music off';btnMusic.setAttribute('aria-pressed',on);});
+document.getElementById('vol').addEventListener('input',e=>music.volume(e.target.value/100));
+
+/* ---------- first frame: title drawn at rest ---------- */
+(async()=>{
+  try{await document.fonts.ready;}catch(e){}
+  instant=true;await SCENES[0].play();instant=false;
+  say("Press <b>▶ Play</b> to watch the board write a full line graph report. You can pause, change the speed, or jump to any scene.");
+  ui();
+})();
+</script>
+
+</body>
+</html>
